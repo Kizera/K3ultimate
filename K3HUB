@@ -177,23 +177,17 @@ end)
 local combatSection = Window:NewTab("Combat"):NewSection("Kill Aura")
 
 combatSection:NewToggle("￰ﾟﾒﾥ Kill Aura", "Attack nearby enemies automatically", function(state)
-    _G.KillAura = state
-    spawn(function()
-        while _G.KillAura do wait(0.2)
-            pcall(function()
-                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                for _, v in pairs(workspace.Live:GetChildren()) do
-                    if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                        if (v.HumanoidRootPart.Position - hrp.Position).Magnitude < 25 then
-                            local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("DamageRemote")
-                            remote:FireServer(v.HumanoidRootPart)
-                        end
-                    end
-                end
-            end)
-        end
-    end)
+    _G.AutoFarm = true
+		while _G.AutoFarm do wait()
+			game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
+		end
+    else
+     _G.AutoFarm = false
+		while _G.AutoFarm do wait()
+			game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
+		end
+        print("Kill Aura Off")
+    end
 end)
 
 -- Misc Section
