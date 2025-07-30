@@ -174,12 +174,17 @@ farmSection:NewToggle("￢ﾚﾡ Auto Farm", "Teleport and attack monsters", fun
 end)
 
 -- Kill Aura Section
-Section:NewButton("Kill Aura", "Activate Kill Aura", function()
-    while true do
-        game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
-        task.wait()
-    end
+local combatSection = Window:NewTab("Combat"):NewSection("Kill Aura")
+
+combatSection:NewButton("Kill Aura", "Start attacking automatically", function()
+    spawn(function()
+        while true do
+            wait()
+            game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
+        end
+    end)
 end)
+
 
 -- Misc Section
 local miscSection = Window:NewTab("Misc"):NewSection("Miscellaneous")
