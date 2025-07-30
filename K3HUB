@@ -1,0 +1,285 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Ultimate GUI", "Ocean")
+
+-- ￠ﾸﾕ￠ﾸﾱ￠ﾸﾧ￠ﾹﾁ￠ﾸﾛ￠ﾸﾣ Global
+_G.AutoEquiped = false
+_G.Weapon = nil
+_G.AutoQuest = false
+_G.SelectedQuest = nil
+_G.AutoFarm = false
+_G.KillAura = false
+
+-- ￠ﾸﾕ￠ﾸﾱ￠ﾸﾧ￠ﾹﾁ￠ﾸﾛ￠ﾸﾣ￠ﾸﾪ￠ﾸﾳ￠ﾸﾫ￠ﾸﾣ￠ﾸﾱ￠ﾸﾚ Boss Auto Farm
+for i = 1, 5 do
+    _G["AutoFarmBoss"..i] = false
+end
+
+local WeaponList = {}
+
+local liveFolder = game:GetService("Workspace"):WaitForChild("Live")
+
+-- ￠ﾸﾟ￠ﾸﾱ￠ﾸﾇ￠ﾸﾁ￠ﾹﾌ￠ﾸﾊ￠ﾸﾱ￠ﾸﾙ Refresh ￠ﾸﾣ￠ﾸﾲ￠ﾸﾢ￠ﾸﾁ￠ﾸﾲ￠ﾸﾣ￠ﾸﾭ￠ﾸﾲ￠ﾸﾧ￠ﾸﾸ￠ﾸﾘ
+local function RefreshWeaponList()
+    table.clear(WeaponList)
+    for i,v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+        if v:IsA("Tool") then
+            table.insert(WeaponList, v.Name)
+        end
+    end
+end
+
+RefreshWeaponList()
+
+-- Auto Equip Section
+local equipSection = Window:NewTab("Auto Equip"):NewSection("Auto Equip")
+
+local weaponDropdown
+local selectedWeapon = nil
+local autoEquip = false
+
+local function CreateWeaponDropdown()
+    if weaponDropdown then
+        -- ￠ﾹﾄ￠ﾸﾡ￠ﾹﾈ￠ﾸﾡ￠ﾸﾵ￠ﾸﾧ￠ﾸﾴ￠ﾸﾘ￠ﾸﾵ￠ﾸﾥ￠ﾸﾚ dropdown ￠ﾹﾀ￠ﾸﾔ￠ﾸﾴ￠ﾸﾡ￠ﾹﾃ￠ﾸﾙ Kavo UI
+        -- workaround: ￠ﾸﾪ￠ﾸﾣ￠ﾹﾉ￠ﾸﾲ￠ﾸﾇ dropdown ￠ﾹﾃ￠ﾸﾫ￠ﾸﾡ￠ﾹﾈ￠ﾸﾋ￠ﾹﾉ￠ﾸﾭ￠ﾸﾙ dropdown ￠ﾹﾀ￠ﾸﾁ￠ﾹﾈ￠ﾸﾲ ￠ﾸﾭ￠ﾸﾲ￠ﾸﾈ￠ﾸﾡ￠ﾸﾵ￠ﾸﾋ￠ﾹﾉ￠ﾸﾳ￠ﾹﾄ￠ﾸﾔ￠ﾹﾉ ￠ﾹﾁ￠ﾸﾕ￠ﾹﾈ￠ﾹﾄ￠ﾸﾡ￠ﾹﾈ￠ﾸﾁ￠ﾸﾣ￠ﾸﾰ￠ﾸﾗ￠ﾸﾚ￠ﾸﾁ￠ﾸﾲ￠ﾸﾣ￠ﾹﾃ￠ﾸﾊ￠ﾹﾉ￠ﾸﾇ￠ﾸﾲ￠ﾸﾙ
+    end
+    weaponDropdown = equipSection:NewDropdown("Select Weapon", "Choose weapon to equip", WeaponList, function(v)
+        selectedWeapon = v
+    end)
+end
+
+CreateWeaponDropdown()
+
+equipSection:NewButton("￰ﾟﾔﾁ Refresh Weapon List", "Update weapon list", function()
+    RefreshWeaponList()
+    CreateWeaponDropdown()
+    Library:Notify("Weapon list refreshed!", 2)
+end)
+
+equipSection:NewToggle("￢ﾚﾔ￯ﾸﾏ Auto Equip", "Automatically equip selected weapon", function(state)
+    autoEquip = state
+    spawn(function()
+        while autoEquip do
+            wait(0.5)
+            if selectedWeapon and game.Players.LocalPlayer.Backpack:FindFirstChild(selectedWeapon) then
+                local character = game.Players.LocalPlayer.Character
+                if character and character:FindFirstChildOfClass("Humanoid") then
+                    pcall(function()
+                        character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack[selectedWeapon])
+                    end)
+                end
+            end
+        end
+    end)
+end)
+
+-- Quest List
+local questList = {
+    "Defeat 10 Bandits",
+    "Defeat 4 of Rahgan's Overseers",
+    "Defeat 6 Akatsuki Grunts",
+    "Defeat 4 Demons",
+    "Defeat 6 of Agni's Overseers",
+    "Defeat 7 of Rahgan's Minions",
+    "Defeat 8 of Lars' Minions",
+    "Defeat 9 of Agni's Minions"
+}
+
+-- Monster mapping ￠ﾸﾪ￠ﾸﾳ￠ﾸﾫ￠ﾸﾣ￠ﾸﾱ￠ﾸﾚ Auto Farm ￠ﾹﾁ￠ﾸﾥ￠ﾸﾰ Bring Mob
+local monsterMap = {
+    ["Defeat 10 Bandits"] = "Bandit",
+    ["Defeat 4 of Rahgan's Overseers"] = "Rahgan's Overseer",
+    ["Defeat 6 Akatsuki Grunts"] = "Akatsuki Grunt",
+    ["Defeat 4 Demons"] = "Demon",
+    ["Defeat 6 of Agni's Overseers"] = "Agni's Overseer",
+    ["Defeat 7 of Rahgan's Minions"] = "Rahgan's Minion",
+    ["Defeat 8 of Lars' Minions"] = "Lars' Minion",
+    ["Defeat 9 of Agni's Minions"] = "Agni's Minion"
+}
+
+-- Auto Quest Section
+local questSection = Window:NewTab("Auto Quest"):NewSection("Quest Options")
+
+questSection:NewDropdown("￰ﾟﾎﾯ Select Quest", "Choose your quest", questList, function(v)
+    _G.SelectedQuest = v
+end)
+
+local function BringAllMobsToPlayer()
+    local questName = _G.SelectedQuest
+    if not questName then return end
+
+    local targetName = monsterMap[questName]
+    if not targetName then return end
+
+    local playerChar = game.Players.LocalPlayer.Character
+    local hrp = playerChar and playerChar:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    for _, mob in pairs(liveFolder:GetChildren()) do
+        if mob.Name == targetName and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
+            mob.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(math.random(-5,5), 0, math.random(-5,5))
+        end
+    end
+end
+
+questSection:NewToggle("￢ﾜﾅ Auto Quest", "Auto accept selected quest", function(state)
+    _G.AutoQuest = state
+    spawn(function()
+        while _G.AutoQuest do wait(1)
+            pcall(function()
+                if _G.SelectedQuest then
+                    local player = game:GetService("Players").LocalPlayer
+                    local questGui = player:WaitForChild("PlayerGui"):WaitForChild("Menu"):WaitForChild("QuestFrame")
+                    local progressBar = questGui:FindFirstChild("ProgressBar")
+                    
+                    if not questGui.Visible then
+                        local args = {
+                            game:GetService("ReplicatedStorage"):WaitForChild("Quests"):WaitForChild(_G.SelectedQuest)
+                        }
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("ChangeQuestRemote"):FireServer(unpack(args))
+                        repeat wait() until not _G.AutoQuest or questGui.Visible
+                        
+                        BringAllMobsToPlayer()
+                    end
+                end
+            end)
+        end
+    end)
+end)
+
+-- Auto Farm Section
+local farmSection = Window:NewTab("Auto Farm"):NewSection("Farming")
+
+farmSection:NewToggle("￢ﾚﾡ Auto Farm", "Teleport and attack monsters", function(state)
+    _G.AutoFarm = state
+    spawn(function()
+        while _G.AutoFarm do wait()
+            pcall(function()
+                local targetName = monsterMap[_G.SelectedQuest]
+                if targetName then
+                    for _, mob in pairs(liveFolder:GetChildren()) do
+                        if mob.Name == targetName and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                            repeat
+                                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                if hrp and mob:FindFirstChild("HumanoidRootPart") then
+                                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 6)
+                                end
+                                task.wait()
+                            until not _G.AutoFarm or mob.Humanoid.Health <= 0
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end)
+
+-- Kill Aura Section
+local combatSection = Window:NewTab("Combat"):NewSection("Kill Aura")
+
+combatSection:NewToggle("￰ﾟﾒﾥ Kill Aura", "Attack nearby enemies automatically", function(state)
+    _G.KillAura = state
+    spawn(function()
+        while _G.KillAura do wait(0.2)
+            pcall(function()
+                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                for _, v in pairs(workspace.Live:GetChildren()) do
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                        if (v.HumanoidRootPart.Position - hrp.Position).Magnitude < 25 then
+                            local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("DamageRemote")
+                            remote:FireServer(v.HumanoidRootPart)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end)
+
+-- Misc Section
+local miscSection = Window:NewTab("Misc"):NewSection("Miscellaneous")
+
+miscSection:NewToggle("￰ﾟﾚﾫ Anti AFK", "Prevents being kicked for idling", function(state)
+    if state then
+        local VirtualUser=game:service'VirtualUser'
+        game:service'Players'.LocalPlayer.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+        Library:Notify("Anti AFK Enabled!", 2)
+    else
+        Library:Notify("Anti AFK Disabled! (Restart to fully disable)", 2)
+    end
+end)
+
+miscSection:NewButton("￢ﾝﾌ Close GUI", "Stop all scripts and close GUI", function()
+    _G.AutoEquiped = false
+    _G.AutoQuest = false
+    _G.SelectedQuest = nil
+    _G.AutoFarm = false
+    _G.KillAura = false
+    for i = 1, 5 do
+        _G["AutoFarmBoss"..i] = false
+    end
+
+    for _, gui in pairs(game:GetService("CoreGui"):GetChildren()) do
+        if gui.Name == "Ultimate GUI" then
+            gui:Destroy()
+        end
+    end
+
+    Library:Notify("GUI Closed and all scripts stopped!", 2)
+end)
+
+-- Boss Auto Farm Section (GUI + ￠ﾸﾕ￠ﾸﾱ￠ﾸﾧ￠ﾹﾁ￠ﾸﾛ￠ﾸﾣ toggle)
+local bossSection = Window:NewTab("Boss"):NewSection("Boss Auto Farm")
+
+local bossNames = {
+    "Gojo",
+    "Shinra",
+    "Zoro (PTS)",
+    "Zoro (TS)",
+    "Boss 5"
+}
+
+local bossToggles = {}
+
+for i, bossName in ipairs(bossNames) do
+    bossToggles[i] = bossSection:NewToggle(bossName, "Toggle Auto Farm "..bossName, function(state)
+        _G["AutoFarmBoss"..i] = state
+    end)
+end
+
+-- ￠ﾸﾟ￠ﾸﾱ￠ﾸﾇ￠ﾸﾁ￠ﾹﾌ￠ﾸﾊ￠ﾸﾱ￠ﾸﾙ Auto Farm Boss (generic)
+local function AutoFarmBoss(index, bossName)
+    spawn(function()
+        while true do
+            task.wait(0.5)
+            if _G["AutoFarmBoss"..index] then
+                pcall(function()
+                    for _, v in pairs(workspace.Live:GetDescendants()) do
+                        if v.Name == bossName and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+                            if v.Humanoid.Health > 0 then
+                                repeat
+                                    task.wait()
+                                    if not _G["AutoFarmBoss"..index] then break end
+                                    local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                    if hrp then
+                                        hrp.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 0, 7)
+                                    end
+                                until v.Humanoid.Health <= 0 or not _G["AutoFarmBoss"..index]
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+-- ￠ﾹﾀ￠ﾸﾣ￠ﾸﾵ￠ﾸﾢ￠ﾸﾁ￠ﾸﾟ￠ﾸﾱ￠ﾸﾇ￠ﾸﾁ￠ﾹﾌ￠ﾸﾊ￠ﾸﾱ￠ﾸﾙ AutoFarmBoss ￠ﾸﾪ￠ﾸﾳ￠ﾸﾫ￠ﾸﾣ￠ﾸﾱ￠ﾸﾚ￠ﾸﾚ￠ﾸﾭ￠ﾸﾪ￠ﾹﾁ￠ﾸﾕ￠ﾹﾈ￠ﾸﾥ￠ﾸﾰ￠ﾸﾕ￠ﾸﾱ￠ﾸﾧ
+for i, bossName in ipairs(bossNames) do
+    if bossName ~= "Boss 5" then
+        AutoFarmBoss(i, bossName)
+    end
+end
