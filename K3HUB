@@ -174,19 +174,10 @@ farmSection:NewToggle("￢ﾚﾡ Auto Farm", "Teleport and attack monsters", fun
 end)
 
 -- Kill Aura Section
-local combatSection = Window:NewTab("Combat"):NewSection("Kill Aura")
-
-combatSection:NewToggle("￰ﾟﾒﾥ Kill Aura", "Attack nearby enemies automatically", function(state)
-    _G.AutoFarm = true
-		while _G.AutoFarm do wait()
-			game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
-		end
-    else
-     _G.AutoFarm = false
-		while _G.AutoFarm do wait()
-			game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
-		end
-        print("Kill Aura Off")
+Section:NewButton("Kill Aura", "Activate Kill Aura", function()
+    while true do
+        game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("BladeCombatRemote"):FireServer()
+        task.wait()
     end
 end)
 
